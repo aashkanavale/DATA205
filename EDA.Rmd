@@ -1,0 +1,128 @@
+---
+title: "DATA205 Project"
+author: "Aashka Navale"
+date: "2025-04-07"
+output: html_document
+---
+
+# Exploratory Data Analysis
+
+### Loading library & datasets
+
+This file has the code for my EDA performances. I start by loading in the only library I'll need (tidyverse) and reading in my cleaned datasets. 
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+fertilityRate <- read_csv("/Users/aashkanavale/Desktop/MC Spring 25/DATA205/Project/Datasets/Cleaned Data/fertilityRate.csv")
+femaleAdolescents <- read_csv("/Users/aashkanavale/Desktop/MC Spring 25/DATA205/Project/Datasets/Cleaned Data/femaleAdolescents.csv")
+maleAdolescents <- read_csv("/Users/aashkanavale/Desktop/MC Spring 25/DATA205/Project/Datasets/Cleaned Data/maleAdolescents.csv")
+totalAdolescents <- read_csv("/Users/aashkanavale/Desktop/MC Spring 25/DATA205/Project/Datasets/Cleaned Data/totalAdolescents.csv")
+```
+
+For a reason I was not able to figure out, when I loaded in my .csv files, there was an "X" before the years. I went ahead and manually renamed the variables here. 
+
+```{r}
+names(fertilityRate) <- c("Country", "1960", "1965", "1970", "1975", "1980", "1985", "1990", "1995", "2000", "2005", "2010", "2015", "2020", "Region", "Income")
+names(femaleAdolescents) <- c("Country", "2000", "2005", "2010", "2015", "2020", "Region", "Income")
+names(maleAdolescents) <- c("Country", "2000", "2005", "2010", "2015", "2020", "Region", "Income")
+names(totalAdolescents) <- c("Country", "2000", "2005", "2010", "2015", "2020", "Region", "Income")
+```
+
+## EDA Question #1:
+### Is there a relationship between region and income? Do certain regions tend to have a set income level?
+
+For my first analysis, I wanted to explore the relationship between region and income. To do this, I first manually factored income from low to high so it would order that way for my visualization.  
+
+```{r}
+fertilityRate$Income <- factor(fertilityRate$Income, 
+                              levels = c("Low income", "Lower middle income", 
+                                         "Upper middle income", "High income"))
+```
+
+I created a table here so that I could count the instances of both region and income since I planned to do a heatmap. Using ggplot, I was able to achieve my first data analysis. 
+
+```{r}
+table1 <- fertilityRate |>
+  count(Region, Income)
+
+heatmap <- table1 |>
+  ggplot(aes(x = Income, y = Region, fill = n)) +
+  geom_tile(color = "#6e78ff") +
+  scale_x_discrete(labels = c("Low\nincome", "Lower\nmiddle income", "Upper\nmiddle income", "High\nincome")) +
+  scale_fill_gradient(low = "#efffff", high = "darkblue") +
+  labs(title = "Number of Countries by Region and Income Level",
+       x = "Income Level", y = "Region", fill = "Number of Countries") +
+  theme_classic()
+heatmap
+```
+
+The blank spaces indicate there were no countries under that income level category. So while Europe and Central Asia have the highest number of countries with high income (40+), North America consists of only 3 countries which all fall under high income. It looks like Sub-Saharan Africa has the most amount of countries in the lowest income category with around 25-30. So to answer the initial question, Europe and Central Asia tend to have the highest income while Sub-Saharan Africa has the lowest. The other regions vary a little bit more. 
+
+## EDA Question #2:
+### What is the relationship between income level and fertility rate?
+
+For the second analysis, I wanted to find a relationship between income level and fertility rate. I reshaped my data to a longer format so that my data is prepared for a time series graph.
+
+```{r}
+fertility_long <- fertilityRate|>
+  pivot_longer(cols = `1960`:`2020`, 
+               names_to = "Year", 
+               values_to = "FertilityRate") |>
+  mutate(Year = as.integer(Year))
+```
+
+I created a line graph to show the trend over time.
+
+```{r}
+linegraph <- fertility_long |>
+  ggplot(aes(x = Year, y = FertilityRate, color = Income)) +
+  stat_summary(fun = mean, geom = "line", size = 1.2) +
+  scale_color_manual(values = c(
+    "Low income" = "lightblue",
+    "Lower middle income" = "deepskyblue1",
+    "Upper middle income" = "dodgerblue3",
+    "High income" = "darkblue")) +
+  labs(title = "Average Fertility Rate by Income Level Over Time",
+       x = "Year",
+       y = "Fertility Rate",
+       color = "Income Level") +
+  theme_minimal()
+
+linegraph
+```
+
+This graph shows a negative trend yet a positive outcome. It looks like adolescent fertility rate, no matter the income level, is decreasing as time progresses. It's predictable for low income to have the highest fertility rate since they have less access to resources and education. Fertility rate consists of births per 1000 girls meaning that in the year 1960, low income people were having 150 births per 100 girls. This statistic compared to 2020 where they were having just less than 100 births per 1000 girls is a huge jump in numbers. Nearly every income level makes a similar steady decline in numbers from 1960 to 2020.
+
+## EDA Question #3:
+### What is the relationship between region and fertility rate?
+
+For my third and final analysis, I wanted to create a boxplot that would show fertility rate by region in a particular year. I chose to do 2020 because it is relatively the most recent year to 2025 and would consist of the most accurate data. 
+
+```{r}
+fertility_2020 <- fertility_long
+
+boxplot <- fertility_2020 |>
+  ggplot(aes(x = Region, y = FertilityRate, fill = Region)) +
+  geom_boxplot(color = "#0b3866") +
+  scale_fill_manual(values = c(
+    "East Asia and Pacific" = "#264653",        
+    "Europe and Central Asia" = "#287271",
+    "Latin America and Caribbean" = "#2a9d8f",
+    "Middle East and North Africa" = "#e9c46a",
+    "North America" = "#f4a261",
+    "South Asia" = "#ee8959",
+    "Sub-Saharan Africa" = "#e76f51")) +
+  labs(title = "Fertility Rate by Region in 2020",
+       x = "Region",
+       y = "Fertility Rate") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+boxplot
+```
+
+As we can see from the graph, Sub-Saharan Africa has the highest overall fertility rate and the widest range as well. South Asia also shows high fertility rates, just slightly less than Sub-Saharan Africa. North America and Europe and Central Asia all have the lowest fertility rates, with most countries below 50. The rest fall in the middle. One thing that immediately stands out is the amount of outliers in Europe and Central Asia. This is because of the region combining countries with very different fertility patterns. Low-fertility nations in Western and Eastern Europe and higher-fertility countries in Central Asia resulted in this spread of values. 
+
